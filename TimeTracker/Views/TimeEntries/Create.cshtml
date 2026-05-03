@@ -1,0 +1,81 @@
+@model TimeTracker.Models.TimeEntry
+@{
+    ViewData["Title"] = "Новий запис";
+    var categories = (string[])ViewBag.Categories;
+}
+
+<div class="page-header">
+    <h1> <span>new</span>.entry</h1>
+    <p>Зафіксуйте витрачений час</p>
+</div>
+
+<div style="max-width: 620px;">
+    <div class="card">
+        <form method="post" action="/TimeEntries/Create">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label asp-for="TaskName">назва завдання</label>
+                <input asp-for="TaskName" class="form-control" placeholder="Що ви робили?" autocomplete="off" />
+                <span asp-validation-for="TaskName" class="field-validation-error"></span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group">
+                    <label asp-for="Category">категорія</label>
+                    <select asp-for="Category" class="form-control">
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Category" class="field-validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="DurationMinutes">тривалість (хв)</label>
+                    <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" placeholder="60" />
+                    <span asp-validation-for="DurationMinutes" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="StartTime">час початку</label>
+                <input asp-for="StartTime" class="form-control" type="datetime-local"
+                       value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="StartTime" class="field-validation-error"></span>
+            </div>
+
+            <!-- Quick duration buttons -->
+            <div style="margin-bottom:1.4rem;">
+                <div style="font-family:var(--mono); font-size:.7rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.5rem;">швидкий вибір</div>
+                <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
+                    @foreach (var (label, val) in new[]{("15хв",15),("30хв",30),("45хв",45),("1г",60),("1.5г",90),("2г",120),("3г",180)})
+                    {
+                        <button type="button" class="btn btn-outline" style="font-size:.7rem; padding:.3rem .7rem;"
+                                onclick="document.getElementById('DurationMinutes').value='@val'">@label</button>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Notes">нотатки <span style="font-weight:300; text-transform:none;">(необов'язково)</span></label>
+                <textarea asp-for="Notes" class="form-control" placeholder="Деталі, результати, посилання..."></textarea>
+                <span asp-validation-for="Notes" class="field-validation-error"></span>
+            </div>
+
+            <div style="display:flex; gap:.8rem; align-items:center; margin-top:.5rem;">
+                <button type="submit" class="btn btn-primary">✓ зберегти запис</button>
+                <a href="/" class="btn btn-outline">скасувати</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- CATEGORY COLOR HINT -->
+    <div style="margin-top:1.5rem; display:flex; gap:.6rem; flex-wrap:wrap;">
+        @foreach (var cat in categories)
+        {
+            <span class="badge badge-@cat">@cat</span>
+        }
+    </div>
+</div>

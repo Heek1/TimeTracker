@@ -1,0 +1,185 @@
+@model TimeTracker.Models.StatisticsViewModel
+@{
+    ViewData["Title"] = "Статистика";
+
+    string Fmt(int min) {
+        var h = min / 60; var m = min % 60;
+        return h > 0 ? $"{h}г {m}хв" : $"{m}хв";
+    }
+
+    var catColors = new Dictionary<string, string> {
+        ["Навчання"]   = "#a99fff",
+        ["Робота"]     = "#00e5a0",
+        ["Відпочинок"] = "#ffd166",
+        ["Спорт"]      = "#ff6b6b",
+        ["Інше"]       = "#8a90a0"
+    };
+
+    // For donut chart data (week)
+    var weekTotal = Model.WeekTotalMinutes > 0 ? Model.WeekTotalMinutes : 1;
+    var allTotal  = Model.AllTimeTotalMinutes > 0 ? Model.AllTimeTotalMinutes : 1;
+}
+
+<div class="page-header">
+    <h1> <span>stats</span>.dashboard</h1>
+    <p>Аналіз витраченого часу</p>
+</div>
+
+<!-- TOP STATS -->
+<div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat-card" style="border-color: rgba(0,229,160,.2);">
+        <div class="stat-label">сьогодні</div>
+        <div class="stat-value">@Fmt(Model.TodayTotalMinutes)</div>
+        <div class="stat-sub">@Model.TodayByCategory.Values.Count(v => v > 0) катег.</div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(124,110,247,.2);">
+        <div class="stat-label">цей тиждень</div>
+        <div class="stat-value" style="color:var(--accent2);">@Fmt(Model.WeekTotalMinutes)</div>
+        <div class="stat-sub">@Model.WeekByCategory.Values.Count(v => v > 0) катег.</div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(255,209,102,.2);">
+        <div class="stat-label">весь час</div>
+        <div class="stat-value" style="color:var(--accent4);">@Fmt(Model.AllTimeTotalMinutes)</div>
+        <div class="stat-sub">@Model.AllTimeByCategory.Values.Count(v => v > 0) катег.</div>
+    </div>
+</div>
+
+<!-- TWO COLUMNS: breakdown tables -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+
+    <!-- Today breakdown -->
+    <div class="card">
+        <div style="font-family:var(--mono); font-size:.75rem; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:1.2rem;">
+            сьогодні по категоріях
+        </div>
+        @if (Model.TodayTotalMinutes == 0)
+        {
+            <div style="color:var(--muted); font-size:.85rem; font-family:var(--mono);">— немає записів —</div>
+        }
+        else
+        {
+            @foreach (var cat in Model.TodayByCategory.Where(x => x.Value > 0).OrderByDescending(x => x.Value))
+            {
+                var pct = (int)((double)cat.Value / Model.TodayTotalMinutes * 100);
+                var color = catColors.GetValueOrDefault(cat.Key, "#888");
+                <div style="margin-bottom:.9rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:.3rem;">
+                        <span class="badge badge-@cat.Key">@cat.Key</span>
+                        <span style="font-family:var(--mono); font-size:.8rem; color:var(--text);">@Fmt(cat.Value) <span style="color:var(--muted);">(@pct%)</span></span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:@pct%; background:@color;"></div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Week breakdown -->
+    <div class="card">
+        <div style="font-family:var(--mono); font-size:.75rem; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:1.2rem;">
+            тиждень по категоріях
+        </div>
+        @if (Model.WeekTotalMinutes == 0)
+        {
+            <div style="color:var(--muted); font-size:.85rem; font-family:var(--mono);">— немає записів —</div>
+        }
+        else
+        {
+            @foreach (var cat in Model.WeekByCategory.Where(x => x.Value > 0).OrderByDescending(x => x.Value))
+            {
+                var pct = (int)((double)cat.Value / Model.WeekTotalMinutes * 100);
+                var color = catColors.GetValueOrDefault(cat.Key, "#888");
+                <div style="margin-bottom:.9rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:.3rem;">
+                        <span class="badge badge-@cat.Key">@cat.Key</span>
+                        <span style="font-family:var(--mono); font-size:.8rem; color:var(--text);">@Fmt(cat.Value) <span style="color:var(--muted);">(@pct%)</span></span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:@pct%; background:@color;"></div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- SVG Donut chart - all time -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <div style="font-family:var(--mono); font-size:.75rem; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:1.5rem;">
+        весь час — розподіл по категоріях
+    </div>
+
+    <div style="display:flex; align-items:center; gap:3rem; flex-wrap:wrap;">
+        <!-- SVG donut -->
+        <div style="flex-shrink:0;">
+            @{
+                var donutData = Model.AllTimeByCategory.Where(x => x.Value > 0).OrderByDescending(x => x.Value).ToList();
+                var radius = 80.0;
+                var cx = 100.0; var cy = 100.0;
+                var circumference = 2 * Math.PI * radius;
+                var offset = 0.0;
+            }
+            <svg width="200" height="200" viewBox="0 0 200 200">
+                <circle cx="@cx" cy="@cy" r="@radius" fill="none" stroke="#1a1e26" stroke-width="32"/>
+                @foreach (var item in donutData)
+                {
+                    var frac = (double)item.Value / allTotal;
+                    var dash = frac * circumference;
+                    var gap  = circumference - dash;
+                    var color = catColors.GetValueOrDefault(item.Key, "#888");
+                    <circle cx="@cx" cy="@cy" r="@radius"
+                            fill="none"
+                            stroke="@color"
+                            stroke-width="28"
+                            stroke-dasharray="@dash.ToString("F2") @gap.ToString("F2")"
+                            stroke-dashoffset="@(-offset).ToString("F2")"
+                            transform="rotate(-90 @cx @cy)"
+                            style="transition: stroke-dasharray .6s ease;" />
+                    offset += frac * circumference;
+                }
+                <text x="@cx" y="@(cy - 8)" text-anchor="middle" font-family="Space Mono, monospace" font-size="13" fill="#e8eaf0" font-weight="700">@Fmt(Model.AllTimeTotalMinutes)</text>
+                <text x="@cx" y="@(cy + 10)" text-anchor="middle" font-family="Space Mono, monospace" font-size="9" fill="#5a6070">ВСЬОГО</text>
+            </svg>
+        </div>
+
+        <!-- Legend -->
+        <div style="flex:1; min-width:180px;">
+            @foreach (var item in donutData)
+            {
+                var pct = (int)((double)item.Value / allTotal * 100);
+                var color = catColors.GetValueOrDefault(item.Key, "#888");
+                <div style="display:flex; align-items:center; gap:.8rem; margin-bottom:.75rem;">
+                    <div style="width:12px; height:12px; border-radius:3px; background:@color; flex-shrink:0;"></div>
+                    <div style="flex:1;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="font-size:.85rem;">@item.Key</span>
+                            <span style="font-family:var(--mono); font-size:.8rem; color:var(--accent);">@Fmt(item.Value)</span>
+                        </div>
+                        <div class="progress-bar-bg" style="margin-top:.25rem;">
+                            <div class="progress-bar-fill" style="width:@pct%; background:@color;"></div>
+                        </div>
+                    </div>
+                    <span style="font-family:var(--mono); font-size:.7rem; color:var(--muted); width:30px; text-align:right;">@pct%</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Recent entries -->
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+        <div style="font-family:var(--mono); font-size:.75rem; letter-spacing:.1em; color:var(--muted); text-transform:uppercase;">
+            останні записи
+        </div>
+        <a href="/?period=all" class="btn btn-outline" style="font-size:.7rem; padding:.3rem .7rem;">всі записи →</a>
+    </div>
+
+    <div class="entry-list">
+        @foreach (var entry in Model.RecentEntries)
+        {
+            @await Html.PartialAsync("_TimeEntryPartial", entry)
+        }
+    </div>
+</div>

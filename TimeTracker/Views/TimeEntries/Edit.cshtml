@@ -1,0 +1,58 @@
+@model TimeTracker.Models.TimeEntry
+@{
+    ViewData["Title"] = "Редагувати запис";
+    var categories = (string[])ViewBag.Categories;
+}
+
+<div class="page-header">
+    <h1> <span>edit</span>.entry</h1>
+    <p>Змініть деталі запису</p>
+</div>
+
+<div style="max-width: 620px;">
+    <div class="card">
+        <form method="post" action="/TimeEntries/Edit/@Model.Id">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group">
+                <label asp-for="TaskName">назва завдання</label>
+                <input asp-for="TaskName" class="form-control" autocomplete="off" />
+                <span asp-validation-for="TaskName" class="field-validation-error"></span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group">
+                    <label asp-for="Category">категорія</label>
+                    <select asp-for="Category" class="form-control"
+                            asp-items="@(new SelectList(categories, Model.Category))">
+                    </select>
+                    <span asp-validation-for="Category" class="field-validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="DurationMinutes">тривалість (хв)</label>
+                    <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
+                    <span asp-validation-for="DurationMinutes" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="StartTime">час початку</label>
+                <input asp-for="StartTime" class="form-control" type="datetime-local"
+                       value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="StartTime" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Notes">нотатки</label>
+                <textarea asp-for="Notes" class="form-control"></textarea>
+            </div>
+
+            <div style="display:flex; gap:.8rem; align-items:center; margin-top:.5rem;">
+                <button type="submit" class="btn btn-primary">✓ зберегти зміни</button>
+                <a href="/" class="btn btn-outline">скасувати</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+@model IEnumerable<TimeTracker.Models.TimeEntry>
+@{
+    ViewData["Title"] = "Записи";
+    var category = ViewBag.SelectedCategory as string;
+    var period   = ViewBag.SelectedPeriod as string ?? "today";
+    var todayTotal = (int)ViewBag.TodayTotal;
+    var todayH = todayTotal / 60;
+    var todayM = todayTotal % 60;
+
+    string PeriodLink(string p) => $"?period={p}" + (string.IsNullOrEmpty(category) ? "" : $"&category={Uri.EscapeDataString(category)}");
+    string CatLink(string? c) => $"?period={period}" + (string.IsNullOrEmpty(c) ? "" : $"&category={Uri.EscapeDataString(c)}");
+}
+
+<div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+    <div>
+        <h1> <span>time</span>.entries</h1>
+        <p>Сьогодні відстежено: <strong style="color:var(--accent); font-family:var(--mono);">@(todayH > 0 ? $"{todayH}г " : "")@todayM хв</strong></p>
+    </div>
+    <a class="btn btn-primary" href="/TimeEntries/Create">+ новий запис</a>
+</div>
+
+<!-- FILTER: period -->
+<div class="filter-bar">
+    <a class="filter-chip @(period == "today" ? "active" : "")" href="@PeriodLink("today")">сьогодні</a>
+    <a class="filter-chip @(period == "week"  ? "active" : "")" href="@PeriodLink("week")">цей тиждень</a>
+    <a class="filter-chip @(period == "all"   ? "active" : "")" href="@PeriodLink("all")">весь час</a>
+
+    <span class="filter-sep">|</span>
+
+    <a class="filter-chip @(string.IsNullOrEmpty(category) ? "active" : "")" href="@CatLink(null)">всі</a>
+    @foreach (var cat in (string[])ViewBag.Categories)
+    {
+        <a class="filter-chip @(category == cat ? "active" : "")" href="@CatLink(cat)">@cat</a>
+    }
+</div>
+
+<!-- ENTRY LIST -->
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="icon">⏱</div>
+        <p>Записів не знайдено.<br>Спробуйте змінити фільтр або <a href="/TimeEntries/Create" style="color:var(--accent);">додайте новий запис</a>.</p>
+    </div>
+}
+else
+{
+    <div class="entry-list">
+        @{
+            string? lastDate = null;
+        }
+        @foreach (var entry in Model)
+        {
+            var dateStr = entry.StartTime.ToString("dd MMMM, dddd");
+            if (dateStr != lastDate)
+            {
+                if (lastDate != null) { <div style="margin-top:.3rem;"></div> }
+                <div style="font-family:var(--mono); font-size:.7rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; padding:.4rem 0 .2rem; border-bottom:1px solid var(--border); margin-bottom:.4rem;">
+                    @entry.StartTime.ToString("dd MMMM yyyy")
+                </div>
+                lastDate = dateStr;
+            }
+            @await Html.PartialAsync("_TimeEntryPartial", entry)
+        }
+    </div>
+
+    <div style="margin-top:1.5rem; font-family:var(--mono); font-size:.75rem; color:var(--muted); text-align:right;">
+        @{ var total = Model.Sum(e => e.DurationMinutes); var th = total/60; var tm = total%60; }
+        всього: <span style="color:var(--accent);">@(th > 0 ? $"{th}г " : "")@tm хв</span> · @Model.Count() записів
+    </div>
+}

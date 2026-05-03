@@ -1,0 +1,58 @@
+@model TimeTracker.Models.TimeEntry
+
+@{
+    var hours = Model.DurationMinutes / 60;
+    var mins  = Model.DurationMinutes % 60;
+    var durationStr = hours > 0 ? $"{hours}г {mins}хв" : $"{mins}хв";
+}
+
+<div class="entry-card" style="
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.4rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .6rem;
+    transition: border-color .2s, transform .15s;
+    animation: fadeUp .3s ease both;
+">
+    <style>
+        .entry-card:hover { border-color: rgba(0,229,160,.25); transform: translateX(3px); }
+        @@keyframes fadeUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+    </style>
+
+    <div>
+        <div style="display:flex; align-items:center; gap:.7rem; margin-bottom:.3rem; flex-wrap:wrap;">
+            <span class="badge badge-@Model.Category">@Model.Category</span>
+            <span style="font-family:var(--mono); font-size:.72rem; color:var(--muted);">
+                @Model.StartTime.ToString("dd.MM  HH:mm")
+            </span>
+        </div>
+
+        <div style="font-size:.95rem; font-weight:600; color:var(--text); margin-bottom:.25rem;">
+            @Model.TaskName
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div style="font-size:.8rem; color:var(--muted); font-style:italic;">
+                @Model.Notes
+            </div>
+        }
+    </div>
+
+    <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:.5rem; min-width:120px;">
+        <span style="font-family:var(--mono); font-size:1.1rem; font-weight:700; color:var(--accent); white-space:nowrap;">
+            @durationStr
+        </span>
+
+        <div style="display:flex; gap:.4rem;">
+            <a class="btn btn-edit" href="/TimeEntries/Edit/@Model.Id">✏ ред.</a>
+            <form method="post" action="/TimeEntries/Delete/@Model.Id" style="display:inline;" onsubmit="return confirm('Видалити запис?')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger">✕</button>
+            </form>
+        </div>
+    </div>
+</div>
